@@ -72,46 +72,72 @@
   You may now close this tab and return to the survey  
   </p>
 <script>
-  const params = new URLSearchParams(window.location.search);
-  const prolific_pid = params.get("prolific_pid");
-  const condition = params.get("condition");
-  const page_name = params.get("page_name");
+  const params = new URLSearchParams(location.search);
 
-  // Replace visible URL to hide condition and page_name
-  if (prolific_pid) {
-    const cleanUrl = window.location.origin + window.location.pathname + "?prolific_pid=" + encodeURIComponent(prolific_pid);
-    window.history.replaceState({}, document.title, cleanUrl);
+  // PROLIFIC PID comes in uppercase (fallback to lowercase just in case)
+  const prolific_pid = params.get("PROLIFIC_PID") || params.get("prolific_pid") || "MISSING";
+
+  // Others are lowercase in the URL
+  const condition = params.get("condition") || "NA";
+  const page_name = params.get("page_name") || location.pathname;
+
+  // Keep only the PID param in the visible URL (preserve its original casing)
+  const pidKeyInUrl = params.has("PROLIFIC_PID") ? "PROLIFIC_PID" : (params.has("prolific_pid") ? "prolific_pid" : null);
+  if (pidKeyInUrl) {
+    const clean = `${location.origin}${location.pathname}?${pidKeyInUrl}=${encodeURIComponent(prolific_pid)}`;
+    history.replaceState({}, document.title, clean);
   }
 
   const entryTime = new Date();
 
+  // Your Google Form endpoint (viewform ➜ formResponse)
+  const FORM_ENDPOINT = "https://docs.google.com/forms/d/e/1FAIpQLSetw2XBlh0ixe5b1J0UvlCmCq4bn6UtDkQWpGaToys55QKmag/formResponse";
+
+  // Field IDs from your prefilled link
   const entryIds = {
-    prolific_pid: "entry.434492044",
-    condition: "entry.1225575535",
-    page_name: "entry.925161350",
-    entry_time: "entry.732388184",
-    exit_time: "entry.372350073",
-    time_spent: "entry.298480214"
+    prolific_pid: "entry.133385082",
+    condition:    "entry.1773209593",
+    page_name:    "entry.745342268",
+    entry_time:   "entry.1324287040",
+    exit_time:    "entry.957514130",
+    time_spent:   "entry.279265126"
   };
 
-  window.addEventListener("unload", function () {
+  let sent = false;
+  function sendLog() {
+    if (sent) return;
+    sent = true;
+
     const exitTime = new Date();
     const timeSpent = Math.round((exitTime - entryTime) / 1000);
 
-    const formData = new FormData();
-    formData.append(entryIds.prolific_pid, prolific_pid);
-    formData.append(entryIds.condition, condition);
-    formData.append(entryIds.page_name, page_name);
-    formData.append(entryIds.entry_time, entryTime.toISOString());
-    formData.append(entryIds.exit_time, exitTime.toISOString());
-    formData.append(entryIds.time_spent, timeSpent);
+    const payload = new URLSearchParams();
+    payload.append(entryIds.prolific_pid, prolific_pid);
+    payload.append(entryIds.condition,    condition);
+    payload.append(entryIds.page_name,    page_name);
+    payload.append(entryIds.entry_time,   entryTime.toISOString());
+    payload.append(entryIds.exit_time,    exitTime.toISOString());
+    payload.append(entryIds.time_spent,   String(timeSpent));
 
-    navigator.sendBeacon(
-      "https://docs.google.com/forms/d/e/1FAIpQLSfPfKcw2oVlFINPNThg4q0FgfVdxxCCLn40vwPY6nXEH2ybeQ/formResponse",
-      new URLSearchParams(formData)
-    );
+    const ok = navigator.sendBeacon && navigator.sendBeacon(FORM_ENDPOINT, payload);
+    if (!ok) {
+      fetch(FORM_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: payload.toString(),
+        keepalive: true
+      }).catch(() => {});
+    }
+  }
+
+  // More reliable triggers than 'unload' alone
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") sendLog();
   });
+  window.addEventListener("pagehide", sendLog, { once: true });
+  window.addEventListener("beforeunload", sendLog, { once: true });
 </script>
+
 
 
 </body>
