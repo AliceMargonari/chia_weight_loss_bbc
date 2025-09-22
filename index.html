@@ -86,12 +86,12 @@
   const entryTime = new Date();
 
   const entryIds = {
-    prolific_pid: "entry.133385082",
-    condition: "entry.1773209593",
-    page_name: "entry.745342268",
-    entry_time: "entry.1324287040",
-    exit_time: "entry.957514130",
-    time_spent: "entry.279265126"
+    prolific_pid: "entry.434492044",
+    condition: "entry.1225575535",
+    page_name: "entry.925161350",
+    entry_time: "entry.732388184",
+    exit_time: "entry.372350073",
+    time_spent: "entry.298480214"
   };
 
   window.addEventListener("unload", function () {
@@ -107,7 +107,7 @@
     formData.append(entryIds.time_spent, timeSpent);
 
     navigator.sendBeacon(
-      "https://docs.google.com/forms/d/e/1FAIpQLSetw2XBlh0ixe5b1J0UvlCmCq4bn6UtDkQWpGaToys55QKmag/formResponse",
+      "https://docs.google.com/forms/d/e/1FAIpQLSejFwFYfb78Rkv92gxAFIWeTncFhEXpnMxnrFE-s-GLKWZ2NA/formResponse",
       new URLSearchParams(formData)
     );
   });
